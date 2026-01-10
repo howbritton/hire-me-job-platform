@@ -1,3 +1,10 @@
+
+/* Added Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 .App {
   text-align: center;
 }
@@ -34,5 +41,37 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+
+
+/* Custom styles for smooth transitions */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Prevent horizontal scroll on mobile */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Adjust content padding for fixed header */
+main {
+  min-height: calc(100vh - 5rem); /* Subtract header height */
+  padding-top: 5rem; /* Add padding equal to header height */
+}
+
+/* Responsive font sizes */
+@layer base {
+  html {
+    font-size: 14px;
+    @screen sm {
+      font-size: 15px;
+    }
+    @screen md {
+      font-size: 16px;
+    }
   }
 }

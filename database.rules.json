@@ -1,0 +1,296 @@
+{
+  "rules": {    
+    "publicStats": {
+      "candidateCount": {
+        ".read": true,
+        ".write": "auth != null && root.child('admins').child(auth.uid).exists()"
+      }
+    },
+    
+    "publicCandidateStats": {
+      "totalCount": {
+        ".read": true,
+        ".write": "auth != null && root.child('admins').child(auth.uid).exists()"
+      }
+    },
+    
+    "admins": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()",
+      "$uid": {
+        ".read": "$uid === auth.uid || (auth != null && root.child('admins').child(auth.uid).exists())",
+        ".write": "$uid === auth.uid || (auth != null && root.child('admins').child(auth.uid).exists())"
+      }
+    },
+
+    "employers": {
+      ".read": true,
+      ".write": "auth != null && (root.child('admins').child(auth.uid).exists() || !root.child('candidates').child(auth.uid).exists())",
+      "$uid": {
+        ".read": true,
+        ".write": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())",
+        "notifications": {
+          ".read": "auth != null && $uid === auth.uid",
+          ".write": "auth != null && (root.child('admins').child(auth.uid).exists() || $uid === auth.uid)"
+        },
+        "questions": {
+          ".read": true,
+          ".write": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())",
+          "$questionId": {
+            ".validate": "newData.hasChildren(['question', 'type', 'required', 'category'])",
+            "type": {
+              ".validate": "newData.val() === 'text' || newData.val() === 'multiple_choice' || newData.val() === 'yes_no'"
+            },
+            "required": {
+              ".validate": "newData.isBoolean()"
+            },
+            "category": {
+              ".validate": "newData.val() === 'general' || newData.val() === 'experience' || newData.val() === 'education' || newData.val() === 'skills'"
+            },
+            "options": {
+              ".validate": "!newData.exists() || (newData.parent().child('type').val() === 'multiple_choice')"
+            }
+          }
+        },
+        "subscription": {
+          ".read": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())",
+          ".write": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())",
+          ".validate": "newData.hasChildren(['status']) || !newData.exists()"
+        }
+      }
+    },
+      
+    "checkoutSessions": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$sessionId": {
+        ".read": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid || root.child('admins').child(auth.uid).exists())",
+        ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid || root.child('admins').child(auth.uid).exists())",
+        ".validate": "newData.hasChildren(['orderId', 'amount', 'status', 'userId', 'createdAt'])"
+      }
+    },
+
+    "jobs": {
+      ".read": true,
+      ".write": "auth != null",
+      "$employerId": {
+        ".read": true,
+        ".write": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+        "$jobId": {
+          ".read": true,
+          ".write": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+          "applications": {
+            "$candidateId": {
+              ".read": "auth != null && ($candidateId === auth.uid || $employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+              ".write": "auth != null && ($candidateId === auth.uid || $employerId === auth.uid || root.child('admins').child(auth.uid).exists())"
+            }
+          }
+        }
+      }
+    },
+
+    "candidates": {
+      
+      ".read": true,
+      ".indexOn": ["isPublic", "profileStatus"],
+      ".write": "auth != null",
+      "$uid": {
+        
+        ".read": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists() || (root.child('employers').child(auth.uid).exists() && root.child('employers').child(auth.uid).child('subscription').child('status').val() === 'active'))",
+        ".write": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists() || !data.exists() || auth.token.admin === true)",
+        "profileStatus": {
+          
+          ".read": true
+        },
+        "profile": {
+          ".read": "auth != null || data.parent().child('isPublic').val() === true",
+          ".write": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())"
+        },
+        "notifications": {
+          ".read": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())",
+          ".write": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())"
+        },
+        "applications": {
+          ".read": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())",
+          ".write": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())",
+          "$applicationId": {
+            ".read": "auth != null && ($uid === auth.uid || data.child('employerId').val() === auth.uid || root.child('admins').child(auth.uid).exists())",
+            ".write": "auth != null && ($uid === auth.uid || data.child('employerId').val() === auth.uid || root.child('admins').child(auth.uid).exists())"
+          }
+        },
+        "favorites": {
+          ".read": "auth != null && $uid === auth.uid",
+          ".write": "auth != null && $uid === auth.uid"
+        }
+      }
+    },
+
+    "packages": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()",
+      "$packageId": {
+        ".validate": "newData.hasChildren(['name', 'price', 'duration', 'features', 'status', 'createdAt'])"
+      }
+    },
+
+    "promoCodes": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()",
+      "$promoId": {
+        ".validate": "newData.hasChildren(['code', 'discountPercentage', 'packageId', 'status', 'createdAt', 'updatedAt']) && newData.child('discountPercentage').isNumber() && newData.child('discountPercentage').val() >= 1 && newData.child('discountPercentage').val() <= 100",
+        "code": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "discountPercentage": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100"
+        },
+        "packageId": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "status": {
+          ".validate": "newData.val() === 'active' || newData.val() === 'inactive'"
+        },
+        "maxUses": {
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 1)"
+        },
+        "usageCount": {
+          ".validate": "!newData.exists() || newData.isNumber()"
+        }
+      }
+    },
+
+    "payments": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".write": "auth != null",
+      "$uid": {
+        ".read": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())",
+        ".write": "auth != null && ($uid === auth.uid || root.child('admins').child(auth.uid).exists())",
+        "$paymentId": {
+          ".validate": "newData.hasChildren(['amount', 'createdAt']) && newData.child('amount').isNumber() && newData.child('amount').val() >= 0"
+        }
+      }
+    },
+      
+    "payment_errors": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".write": "auth != null",
+      "$paymentId": {
+        ".validate": "newData.hasChildren(['error', 'timestamp', 'userId'])"
+      }
+    },
+
+    "notification_errors": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".write": "auth != null",
+      "$errorId": {
+        ".validate": "newData.hasChildren(['error', 'timestamp', 'type', 'userId'])"
+      }
+    },
+
+    "contact_messages": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".write": true,
+      "$message_id": {
+        ".validate": "newData.hasChildren(['name', 'email', 'message', 'timestamp', 'status'])"
+      }
+    },
+
+    "reviews": {
+      ".indexOn": ["status", "userType"],
+      ".read": true,
+      ".write": "auth != null",
+      "$reviewId": {
+        ".read": true,
+        ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid || root.child('admins').child(auth.uid).exists())",
+        ".validate": "newData.hasChildren(['userId', 'userType', 'rating', 'comment', 'status', 'createdAt'])",
+        "rating": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() === 'pending' || newData.val() === 'approved' || newData.val() === 'rejected')"
+        },
+        "userType": {
+          ".validate": "newData.isString() && (newData.val() === 'employer' || newData.val() === 'candidate')"
+        }
+      }
+    },
+
+    "pending-jobs": {
+      ".read": "auth != null && (root.child('admins').child(auth.uid).exists() || root.child('employers').child(auth.uid).exists())",
+      ".write": "auth != null && (root.child('admins').child(auth.uid).exists() || root.child('employers').child(auth.uid).exists())",
+      "$employerId": {
+        ".read": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+        ".write": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+        "$jobId": {
+          ".read": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+          ".write": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+          "applications": {
+            "$candidateId": {
+              ".read": "auth != null && ($candidateId === auth.uid || $employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+              ".write": "auth != null && ($candidateId === auth.uid || $employerId === auth.uid || root.child('admins').child(auth.uid).exists())"
+            }
+          }
+        }
+      }
+    },
+      
+    "rejected-jobs": {
+      ".read": "auth != null && (root.child('admins').child(auth.uid).exists() || root.child('employers').child(auth.uid).exists())",
+      ".write": "auth != null && (root.child('admins').child(auth.uid).exists() || root.child('employers').child(auth.uid).exists())",
+      "$employerId": {
+        ".read": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+        ".write": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+        "$jobId": {
+          ".read": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+          ".write": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())"
+        }
+      }
+    },
+
+    "expired-jobs": {
+      ".read": "auth != null && (root.child('admins').child(auth.uid).exists() || root.child('employers').child(auth.uid).exists())",
+      ".write": "auth != null",
+      "$employerId": {
+        ".read": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+        ".write": "auth != null",
+        "$jobId": {
+          ".read": "auth != null && ($employerId === auth.uid || root.child('admins').child(auth.uid).exists())",
+          ".write": "auth != null",
+          ".validate": "newData.hasChildren(['status', 'expiredAt', 'expireReason'])",
+          "status": {
+            ".validate": "newData.val() === 'expired'"
+          },
+          "expiredAt": {
+            ".validate": "newData.isString()"
+          },
+          "expireReason": {
+            ".validate": "newData.isString()"
+          }
+        }
+      }
+    },
+
+    "resumes": {
+      ".read": "auth != null && (root.child('admins').child(auth.uid).exists() || root.child('employers').child(auth.uid).child('subscription').child('status').val() === 'active')",
+      ".write": "auth != null"
+    },
+
+    "transactions": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()"
+    },
+
+    "stats": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()"
+    },
+
+    "temporaryWorkers": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$workerId": {
+        ".validate": "newData.hasChildren(['name', 'email', 'phone', 'status', 'listedDate'])"
+      }
+    }
+  }
+}
